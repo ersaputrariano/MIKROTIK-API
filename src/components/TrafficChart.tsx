@@ -1,4 +1,5 @@
 import React from 'react';
+import { Activity } from 'lucide-react';
 
 interface TrafficData {
   time: string;
@@ -13,8 +14,10 @@ interface TrafficChartProps {
 const TrafficChart: React.FC<TrafficChartProps> = ({ data }) => {
   if (!data || data.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center text-gray-500">
-        No traffic data available
+      <div className="h-64 flex flex-col items-center justify-center text-gray-500 space-y-2">
+        <Activity className="h-8 w-8 opacity-50" />
+        <p>No traffic data available</p>
+        <p className="text-sm">Data will appear once devices are connected</p>
       </div>
     );
   }

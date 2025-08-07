@@ -68,9 +68,18 @@ const DeviceManager: React.FC = () => {
   const deleteDevice = async (deviceId: string) => {
     if (confirm('Are you sure you want to remove this device?')) {
       try {
-        // In a real implementation, this would call the API to delete the device
-        setDevices(prev => prev.filter(device => device.id !== deviceId));
-        alert('Device removed successfully');
+        const response = await fetch(`http://localhost:3001/api/devices/${deviceId}`, {
+          method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          setDevices(prev => prev.filter(device => device.id !== deviceId));
+          alert('Device removed successfully');
+        } else {
+          throw new Error(result.message);
+        }
       } catch (error) {
         alert('Failed to remove device: ' + error);
       }
@@ -78,9 +87,19 @@ const DeviceManager: React.FC = () => {
   };
 
   const viewDeviceDetails = (deviceId: string) => {
-    setSelectedDevice(deviceId);
-    // In a real implementation, this would open a modal or navigate to device details
-    alert(`Viewing details for device: ${deviceId}`);
+    const device = devices.find(d => d.id === deviceId);
+    if (device) {
+      const details = `
+Device Details:
+Name: ${device.name}
+Host: ${device.host}
+Status: ${device.status}
+Version: ${device.version || 'Unknown'}
+Uptime: ${device.uptime || 'Unknown'}
+Last Seen: ${new Date(device.lastSeen).toLocaleString()}
+      `;
+      alert(details);
+    }
   };
 
   const getStatusIcon = (status: string) => {

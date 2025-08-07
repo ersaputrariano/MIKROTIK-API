@@ -64,9 +64,22 @@ const SecurityEvents: React.FC<SecurityEventsProps> = ({ wsConnection }) => {
   }, [events, searchTerm, severityFilter, typeFilter]);
 
   const acknowledgeEvent = async (eventId: string) => {
-    setEvents(prev => prev.map(event => 
-      event.id === eventId ? { ...event, acknowledged: true } : event
-    ));
+    try {
+      const response = await fetch(`http://localhost:3001/api/security/events/${eventId}/acknowledge`, {
+        method: 'POST'
+      });
+      
+      if (response.ok) {
+        setEvents(prev => prev.map(event => 
+          event.id === eventId ? { ...event, acknowledged: true } : event
+        ));
+      } else {
+        throw new Error('Failed to acknowledge event');
+      }
+    } catch (error) {
+      console.error('Error acknowledging event:', error);
+      alert('Failed to acknowledge event. Please try again.');
+    }
   };
 
   const fetchEvents = async () => {

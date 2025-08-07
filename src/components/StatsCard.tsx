@@ -19,17 +19,17 @@ const StatsCard: React.FC<StatsCardProps> = ({ title, value, icon: Icon, trend, 
   };
 
   return (
-    <div className="bg-gray-800 rounded-lg p-6 hover:bg-gray-750 transition-colors">
+    <div className="bg-gray-800 rounded-lg p-6 hover:bg-gray-750 transition-all transform hover:scale-105 shadow-lg border border-gray-700 hover:border-gray-600">
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <p className="text-gray-400 text-sm font-medium">{title}</p>
-          <p className="text-2xl font-bold text-white mt-1">{value}</p>
+          <p className="text-3xl font-bold text-white mt-2">{value}</p>
           {trend && (
-            <p className="text-gray-500 text-xs mt-1">{trend}</p>
+            <p className="text-gray-500 text-xs mt-2">{trend}</p>
           )}
         </div>
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
-          <Icon className="h-6 w-6" />
+        <div className={`p-4 rounded-xl ${colorClasses[color]} shadow-lg`}>
+          <Icon className="h-8 w-8" />
         </div>
       </div>
     </div>

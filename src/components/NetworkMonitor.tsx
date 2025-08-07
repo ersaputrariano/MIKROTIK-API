@@ -122,6 +122,11 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ wsConnection }) => {
   };
 
   const exportConnections = () => {
+    if (filteredConnections.length === 0) {
+      alert('No connections to export');
+      return;
+    }
+    
     const csvContent = [
       ['Protocol', 'Source', 'Destination', 'State', 'Bytes', 'Packets', 'Risk'],
       ...filteredConnections.map(conn => [
@@ -142,6 +147,8 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ wsConnection }) => {
     a.download = `network-connections-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    
+    alert(`Exported ${filteredConnections.length} connections to CSV file`);
   };
 
   return (

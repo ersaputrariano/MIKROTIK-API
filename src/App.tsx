@@ -10,6 +10,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [notifications, setNotifications] = useState<string[]>([]);
 
   // Handle navigation from hash changes
   useEffect(() => {
@@ -28,26 +29,70 @@ function App() {
 
   useEffect(() => {
     // Establish WebSocket connection for real-time updates
-    const ws = new WebSocket('ws://localhost:3002');
+    const connectWebSocket = () => {
+      const ws = new WebSocket('ws://localhost:3002');
     
-    ws.onopen = () => {
-      setConnectionStatus('connected');
-      setWsConnection(ws);
+      ws.onopen = () => {
+        setConnectionStatus('connected');
+        setWsConnection(ws);
+        console.log('WebSocket connected');
+      };
+    
+      ws.onclose = () => {
+        setConnectionStatus('disconnected');
+        setWsConnection(null);
+        console.log('WebSocket disconnected');
+        
+        // Attempt to reconnect after 5 seconds
+        setTimeout(connectWebSocket, 5000);
+      };
+    
+      ws.onerror = (error) => {
+        setConnectionStatus('error');
+        console.error('WebSocket error:', error);
+      };
+      
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        // Handle different message types
+        switch (data.type) {
+          case 'device_added':
+            setNotifications(prev => [...prev, `Device "${data.device.name}" added successfully`]);
+            break;
+          case 'device_removed':
+            setNotifications(prev => [...prev, `Device removed from monitoring`]);
+            break;
+          case 'security_scan_complete':
+            setNotifications(prev => [...prev, `Security scan completed - ${data.results.vulnerabilities} vulnerabilities found`]);
+            break;
+          case 'alert_dismissed':
+            setNotifications(prev => [...prev, `Security alert dismissed`]);
+            break;
+        }
+      };
+      
+      return ws;
     };
     
-    ws.onclose = () => {
-      setConnectionStatus('disconnected');
-      setWsConnection(null);
-    };
-    
-    ws.onerror = () => {
-      setConnectionStatus('error');
-    };
+    const ws = connectWebSocket();
     
     return () => {
-      ws.close();
+      if (ws) {
+        ws.close();
+      }
     };
   }, []);
+
+  // Clear notifications after 5 seconds
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const timer = setTimeout(() => {
+        setNotifications(prev => prev.slice(1));
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notifications]);
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: Activity },
@@ -76,6 +121,20 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+      {/* Notifications */}
+      {notifications.length > 0 && (
+        <div className="fixed top-4 right-4 z-50 space-y-2">
+          {notifications.slice(0, 3).map((notification, index) => (
+            <div
+              key={index}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-slide-in-right"
+            >
+              {notification}
+            </div>
+          ))}
+        </div>
+      )}
+      
       {/* Header */}
       <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
         <div className="flex items-center justify-between">
@@ -99,8 +158,12 @@ function App() {
                 connectionStatus === 'connected' ? 'bg-green-400' :
                 connectionStatus === 'error' ? 'bg-red-400' :
                 'bg-gray-400'
-              }`}></div>
+              } ${connectionStatus === 'connected' ? 'animate-pulse' : ''}`}></div>
               <span className="capitalize">{connectionStatus}</span>
+            </div>
+            
+            <div className="text-sm text-gray-400">
+              {new Date().toLocaleTimeString()}
             </div>
           </div>
         </div>

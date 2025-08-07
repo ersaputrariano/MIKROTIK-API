@@ -108,12 +108,21 @@ const FirewallManager: React.FC = () => {
   });
 
   const addNewRule = () => {
+    if (rules.length >= 50) {
+      alert('Maximum number of firewall rules reached (50). Please remove unused rules first.');
+      return;
+    }
     setShowAddRuleForm(true);
   };
 
   const editRule = (rule: FirewallRule) => {
-    setEditingRule(rule);
-    alert(`Editing rule ${rule.id}: ${rule.comment}`);
+    const newComment = prompt(`Edit comment for rule ${rule.id}:`, rule.comment);
+    if (newComment !== null && newComment !== rule.comment) {
+      setRules(prev => prev.map(r => 
+        r.id === rule.id ? { ...r, comment: newComment } : r
+      ));
+      alert('Rule updated successfully');
+    }
   };
 
   const deleteRule = (ruleId: number) => {
@@ -124,9 +133,41 @@ const FirewallManager: React.FC = () => {
   };
 
   const toggleRuleStatus = (ruleId: number) => {
+    const rule = rules.find(r => r.id === ruleId);
+    const action = rule?.disabled ? 'enable' : 'disable';
+    
+    if (confirm(`Are you sure you want to ${action} this firewall rule?`)) {
+      setRules(prev => prev.map(rule => 
+        rule.id === ruleId ? { ...rule, disabled: !rule.disabled } : rule
+      ));
+      alert(`Firewall rule ${action}d successfully`);
+    }
+  };
+
+  const handleAddRule = (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    
+    const newRule: FirewallRule = {
+      id: Math.max(...rules.map(r => r.id), 0) + 1,
+      chain: formData.get('chain') as string,
+      action: formData.get('action') as string,
+      srcAddress: formData.get('srcAddress') as string || 'any',
+      dstAddress: formData.get('dstAddress') as string || 'any',
+      protocol: formData.get('protocol') as string,
+      port: formData.get('port') ? parseInt(formData.get('port') as string) : null,
+      comment: formData.get('comment') as string || `Rule ${rules.length + 1}`,
+      bytes: 0,
+      packets: 0,
+      disabled: false
+    };
+    
     setRules(prev => prev.map(rule => 
       rule.id === ruleId ? { ...rule, disabled: !rule.disabled } : rule
     ));
+    setRules(prev => [...prev, newRule]);
+    setShowAddRuleForm(false);
+    alert('Firewall rule added successfully');
   };
 
   return (
@@ -333,11 +374,11 @@ const FirewallManager: React.FC = () => {
           <div className="bg-gray-800 rounded-lg p-6 w-full max-w-2xl">
             <h3 className="text-lg font-semibold text-white mb-4">Add Firewall Rule</h3>
             
-            <form className="space-y-4">
+            <form onSubmit={handleAddRule} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Chain</label>
-                  <select className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                  <select name="chain" required className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
                     <option value="input">Input</option>
                     <option value="forward">Forward</option>
                     <option value="output">Output</option>
@@ -346,7 +387,7 @@ const FirewallManager: React.FC = () => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Action</label>
-                  <select className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                  <select name="action" required className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
                     <option value="accept">Accept</option>
                     <option value="drop">Drop</option>
                     <option value="reject">Reject</option>
@@ -358,6 +399,7 @@ const FirewallManager: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Source Address</label>
                   <input
+                    name="srcAddress"
                     type="text"
                     placeholder="192.168.1.0/24 or any"
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
@@ -367,6 +409,7 @@ const FirewallManager: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Destination Address</label>
                   <input
+                    name="dstAddress"
                     type="text"
                     placeholder="10.0.0.0/8 or any"
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
@@ -377,7 +420,7 @@ const FirewallManager: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Protocol</label>
-                  <select className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                  <select name="protocol" required className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
                     <option value="tcp">TCP</option>
                     <option value="udp">UDP</option>
                     <option value="icmp">ICMP</option>
@@ -387,6 +430,7 @@ const FirewallManager: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Port</label>
                   <input
+                    name="port"
                     type="number"
                     placeholder="80, 443, etc."
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
@@ -397,6 +441,7 @@ const FirewallManager: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Comment</label>
                 <input
+                  name="comment"
                   type="text"
                   placeholder="Rule description"
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
@@ -405,12 +450,8 @@ const FirewallManager: React.FC = () => {
               
               <div className="flex space-x-3 pt-4">
                 <button
-                  type="button"
-                  onClick={() => {
-                    alert('Firewall rule added successfully!');
-                    setShowAddRuleForm(false);
-                  }}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors"
+                  type="submit"
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors font-medium"
                 >
                   Add Rule
                 </button>

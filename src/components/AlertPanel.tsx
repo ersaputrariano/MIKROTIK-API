@@ -44,7 +44,20 @@ const AlertPanel: React.FC<AlertPanelProps> = ({ onViewAll }) => {
   };
 
   const dismissAlert = async (alertId: string) => {
-    setAlerts(prev => prev.filter(alert => alert.id !== alertId));
+    try {
+      const response = await fetch(`http://localhost:3001/api/security/alerts/${alertId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        setAlerts(prev => prev.filter(alert => alert.id !== alertId));
+      } else {
+        throw new Error('Failed to dismiss alert');
+      }
+    } catch (error) {
+      console.error('Error dismissing alert:', error);
+      alert('Failed to dismiss alert. Please try again.');
+    }
   };
   const getSeverityColor = (severity: string) => {
     switch (severity) {

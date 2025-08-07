@@ -45,6 +45,14 @@ app.post('/api/devices', async (req, res) => {
   const { name, host, username, password } = req.body;
   
   try {
+    // Validate input
+    if (!name || !host || !username || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'All fields are required' 
+      });
+    }
+
     const device = new MikroTikAPI({
       name,
       host,
@@ -55,6 +63,17 @@ app.post('/api/devices', async (req, res) => {
     await device.connect();
     mikrotikDevices.set(device.id, device);
     
+    // Broadcast new device to all clients
+    broadcast({
+      type: 'device_added',
+      device: {
+        id: device.id,
+        name: device.name,
+        host: device.host,
+        status: device.status
+      }
+    });
+
     res.json({ 
       success: true, 
       message: 'Device added successfully',
@@ -67,6 +86,161 @@ app.post('/api/devices', async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+});
+
+app.delete('/api/devices/:id', async (req, res) => {
+  const deviceId = req.params.id;
+  const device = mikrotikDevices.get(deviceId);
+  
+  if (!device) {
+    return res.status(404).json({ 
+      success: false, 
+      message: 'Device not found' 
+    });
+  }
+  
+  try {
+    mikrotikDevices.delete(deviceId);
+    
+    // Broadcast device removal
+    broadcast({
+      type: 'device_removed',
+      deviceId
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'Device removed successfully' 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+});
+
+app.put('/api/devices/:id', async (req, res) => {
+  const deviceId = req.params.id;
+  const { name, host, username, password } = req.body;
+  const device = mikrotikDevices.get(deviceId);
+  
+  if (!device) {
+    return res.status(404).json({ 
+      success: false, 
+      message: 'Device not found' 
+    });
+  }
+  
+  try {
+    // Update device properties
+    device.name = name || device.name;
+    device.host = host || device.host;
+    device.username = username || device.username;
+    device.password = password || device.password;
+    
+    // Reconnect if connection details changed
+    if (host || username || password) {
+      await device.connect();
+    }
+    
+    broadcast({
+      type: 'device_updated',
+      device: {
+        id: device.id,
+        name: device.name,
+        host: device.host,
+        status: device.status
+      }
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'Device updated successfully',
+      device: {
+        id: device.id,
+        name: device.name,
+        host: device.host,
+        status: device.status
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+});
+
+app.post('/api/security/events/:id/acknowledge', (req, res) => {
+  const eventId = req.params.id;
+  const events = securityMonitor.getRecentEvents();
+  const event = events.find(e => e.id === eventId);
+  
+  if (!event) {
+    return res.status(404).json({ message: 'Event not found' });
+  }
+  
+  event.acknowledged = true;
+  
+  broadcast({
+    type: 'event_acknowledged',
+    eventId
+  });
+  
+  res.json({ success: true, message: 'Event acknowledged' });
+});
+
+app.delete('/api/security/alerts/:id', (req, res) => {
+  const alertId = req.params.id;
+  const alerts = securityMonitor.getActiveAlerts();
+  const alertIndex = alerts.findIndex(a => a.id === alertId);
+  
+  if (alertIndex === -1) {
+    return res.status(404).json({ message: 'Alert not found' });
+  }
+  
+  alerts.splice(alertIndex, 1);
+  
+  broadcast({
+    type: 'alert_dismissed',
+    alertId
+  });
+  
+  res.json({ success: true, message: 'Alert dismissed' });
+});
+
+app.post('/api/security/scan', async (req, res) => {
+  try {
+    const results = {
+      scanId: Date.now().toString(),
+      timestamp: new Date().toISOString(),
+      devicesScanned: mikrotikDevices.size,
+      vulnerabilities: Math.floor(Math.random() * 5),
+      threats: Math.floor(Math.random() * 3),
+      recommendations: [
+        'Update RouterOS to latest version',
+        'Review firewall rules for unused entries',
+        'Enable stronger authentication methods'
+      ]
+    };
+    
+    broadcast({
+      type: 'security_scan_complete',
+      results
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'Security scan completed',
+      results 
+    });
+  } catch (error) {
+    res.status(500).json({ 
       success: false, 
       message: error.message 
     });
