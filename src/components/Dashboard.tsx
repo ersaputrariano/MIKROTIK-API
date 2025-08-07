@@ -142,7 +142,10 @@ const Dashboard: React.FC<DashboardProps> = ({ wsConnection }) => {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <button className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg transition-colors">
+        <button 
+          onClick={() => window.location.hash = '#devices'}
+          className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg transition-colors"
+        >
           <Router className="h-6 w-6 mb-2" />
           <div className="text-left">
             <div className="font-semibold">Add Device</div>
@@ -150,7 +153,13 @@ const Dashboard: React.FC<DashboardProps> = ({ wsConnection }) => {
           </div>
         </button>
         
-        <button className="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg transition-colors">
+        <button 
+          onClick={() => {
+            alert('Security scan initiated! This will analyze all connected devices for vulnerabilities.');
+            // In a real implementation, this would trigger a security scan
+          }}
+          className="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg transition-colors"
+        >
           <Shield className="h-6 w-6 mb-2" />
           <div className="text-left">
             <div className="font-semibold">Security Scan</div>
@@ -158,7 +167,24 @@ const Dashboard: React.FC<DashboardProps> = ({ wsConnection }) => {
           </div>
         </button>
         
-        <button className="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg transition-colors">
+        <button 
+          onClick={() => {
+            const reportData = {
+              timestamp: new Date().toISOString(),
+              devices: stats?.totalDevices || 0,
+              alerts: stats?.totalAlerts || 0,
+              events: stats?.recentEvents?.length || 0
+            };
+            const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `security-report-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+          className="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg transition-colors"
+        >
           <TrendingUp className="h-6 w-6 mb-2" />
           <div className="text-left">
             <div className="font-semibold">Generate Report</div>

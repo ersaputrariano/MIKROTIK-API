@@ -11,7 +11,11 @@ interface Alert {
   resolved: boolean;
 }
 
-const AlertPanel: React.FC = () => {
+interface AlertPanelProps {
+  onViewAll?: () => void;
+}
+
+const AlertPanel: React.FC<AlertPanelProps> = ({ onViewAll }) => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,6 +37,15 @@ const AlertPanel: React.FC = () => {
     }
   };
 
+  const acknowledgeAlert = async (alertId: string) => {
+    setAlerts(prev => prev.map(alert => 
+      alert.id === alertId ? { ...alert, acknowledged: true } : alert
+    ));
+  };
+
+  const dismissAlert = async (alertId: string) => {
+    setAlerts(prev => prev.filter(alert => alert.id !== alertId));
+  };
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical':
@@ -97,7 +110,11 @@ const AlertPanel: React.FC = () => {
               </div>
             </div>
             
-            <button className="text-gray-400 hover:text-white ml-2">
+            <button 
+              onClick={() => dismissAlert(alert.id)}
+              className="text-gray-400 hover:text-white ml-2"
+              title="Dismiss alert"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -106,7 +123,10 @@ const AlertPanel: React.FC = () => {
       
       {alerts.length > 5 && (
         <div className="text-center py-2">
-          <button className="text-blue-400 hover:text-blue-300 text-sm">
+          <button 
+            onClick={() => onViewAll?.()}
+            className="text-blue-400 hover:text-blue-300 text-sm"
+          >
             View all {alerts.length} alerts →
           </button>
         </div>

@@ -121,6 +121,29 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ wsConnection }) => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const exportConnections = () => {
+    const csvContent = [
+      ['Protocol', 'Source', 'Destination', 'State', 'Bytes', 'Packets', 'Risk'],
+      ...filteredConnections.map(conn => [
+        conn.protocol,
+        `${conn.srcAddress}:${conn.srcPort}`,
+        `${conn.dstAddress}:${conn.dstPort}`,
+        conn.state,
+        conn.bytes.toString(),
+        conn.packets.toString(),
+        conn.risk
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `network-connections-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -139,7 +162,10 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ wsConnection }) => {
             <span>Refresh</span>
           </button>
           
-          <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+          <button 
+            onClick={exportConnections}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
             <Download className="h-4 w-4" />
             <span>Export</span>
           </button>

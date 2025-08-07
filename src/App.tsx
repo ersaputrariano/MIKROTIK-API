@@ -11,6 +11,21 @@ function App() {
   const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
 
+  // Handle navigation from hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && navigation.some(nav => nav.id === hash)) {
+        setActiveTab(hash);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange(); // Check initial hash
+
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   useEffect(() => {
     // Establish WebSocket connection for real-time updates
     const ws = new WebSocket('ws://localhost:3002');

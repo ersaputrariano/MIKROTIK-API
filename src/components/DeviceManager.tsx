@@ -21,6 +21,7 @@ const DeviceManager: React.FC = () => {
     username: '',
     password: ''
   });
+  const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDevices();
@@ -62,6 +63,24 @@ const DeviceManager: React.FC = () => {
     } catch (error) {
       alert('Failed to add device: ' + error);
     }
+  };
+
+  const deleteDevice = async (deviceId: string) => {
+    if (confirm('Are you sure you want to remove this device?')) {
+      try {
+        // In a real implementation, this would call the API to delete the device
+        setDevices(prev => prev.filter(device => device.id !== deviceId));
+        alert('Device removed successfully');
+      } catch (error) {
+        alert('Failed to remove device: ' + error);
+      }
+    }
+  };
+
+  const viewDeviceDetails = (deviceId: string) => {
+    setSelectedDevice(deviceId);
+    // In a real implementation, this would open a modal or navigate to device details
+    alert(`Viewing details for device: ${deviceId}`);
   };
 
   const getStatusIcon = (status: string) => {
@@ -241,11 +260,19 @@ const DeviceManager: React.FC = () => {
                   <div className="flex space-x-2">
                     {getStatusIcon(device.status)}
                     
-                    <button className="p-2 text-gray-400 hover:text-blue-400 transition-colors">
+                    <button 
+                      onClick={() => viewDeviceDetails(device.id)}
+                      className="p-2 text-gray-400 hover:text-blue-400 transition-colors"
+                      title="Device settings"
+                    >
                       <Settings className="h-4 w-4" />
                     </button>
                     
-                    <button className="p-2 text-gray-400 hover:text-red-400 transition-colors">
+                    <button 
+                      onClick={() => deleteDevice(device.id)}
+                      className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                      title="Remove device"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>

@@ -63,6 +63,12 @@ const SecurityEvents: React.FC<SecurityEventsProps> = ({ wsConnection }) => {
     setFilteredEvents(filtered);
   }, [events, searchTerm, severityFilter, typeFilter]);
 
+  const acknowledgeEvent = async (eventId: string) => {
+    setEvents(prev => prev.map(event => 
+      event.id === eventId ? { ...event, acknowledged: true } : event
+    ));
+  };
+
   const fetchEvents = async () => {
     try {
       const response = await fetch('http://localhost:3001/api/security/events');
@@ -213,7 +219,10 @@ const SecurityEvents: React.FC<SecurityEventsProps> = ({ wsConnection }) => {
                       </div>
                       
                       {!event.acknowledged && (
-                        <button className="text-blue-400 hover:text-blue-300 text-sm">
+                        <button 
+                          onClick={() => acknowledgeEvent(event.id)}
+                          className="text-blue-400 hover:text-blue-300 text-sm"
+                        >
                           Acknowledge
                         </button>
                       )}

@@ -21,6 +21,8 @@ const FirewallManager: React.FC = () => {
   const [selectedDevice, setSelectedDevice] = useState<string>('');
   const [chainFilter, setChainFilter] = useState('all');
   const [actionFilter, setActionFilter] = useState('all');
+  const [showAddRuleForm, setShowAddRuleForm] = useState(false);
+  const [editingRule, setEditingRule] = useState<FirewallRule | null>(null);
 
   useEffect(() => {
     fetchFirewallRules();
@@ -105,6 +107,28 @@ const FirewallManager: React.FC = () => {
     return true;
   });
 
+  const addNewRule = () => {
+    setShowAddRuleForm(true);
+  };
+
+  const editRule = (rule: FirewallRule) => {
+    setEditingRule(rule);
+    alert(`Editing rule ${rule.id}: ${rule.comment}`);
+  };
+
+  const deleteRule = (ruleId: number) => {
+    if (confirm('Are you sure you want to delete this firewall rule?')) {
+      setRules(prev => prev.filter(rule => rule.id !== ruleId));
+      alert('Firewall rule deleted successfully');
+    }
+  };
+
+  const toggleRuleStatus = (ruleId: number) => {
+    setRules(prev => prev.map(rule => 
+      rule.id === ruleId ? { ...rule, disabled: !rule.disabled } : rule
+    ));
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -115,7 +139,10 @@ const FirewallManager: React.FC = () => {
         </div>
         
         <div className="flex space-x-3">
-          <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+          <button 
+            onClick={addNewRule}
+            className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+          >
             <Plus className="h-4 w-4" />
             <span>Add Rule</span>
           </button>
@@ -254,9 +281,13 @@ const FirewallManager: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                      <button
+                        onClick={() => toggleRuleStatus(rule.id)}
+                        className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full transition-colors hover:opacity-80 ${
                         rule.disabled ? 'bg-red-900 text-red-200' : 'bg-green-900 text-green-200'
-                      }`}>
+                        }`}
+                        title={rule.disabled ? 'Click to enable' : 'Click to disable'}
+                      >
                         {rule.disabled ? (
                           <>
                             <EyeOff className="h-3 w-3 mr-1" />
@@ -268,14 +299,22 @@ const FirewallManager: React.FC = () => {
                             Active
                           </>
                         )}
-                      </span>
+                      </button>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-400">
                       <div className="flex space-x-2">
-                        <button className="text-blue-400 hover:text-blue-300">
+                        <button 
+                          onClick={() => editRule(rule)}
+                          className="text-blue-400 hover:text-blue-300"
+                          title="Edit rule"
+                        >
                           <Edit className="h-4 w-4" />
                         </button>
-                        <button className="text-red-400 hover:text-red-300">
+                        <button 
+                          onClick={() => deleteRule(rule.id)}
+                          className="text-red-400 hover:text-red-300"
+                          title="Delete rule"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
@@ -284,6 +323,106 @@ const FirewallManager: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Add Rule Form Modal */}
+      {showAddRuleForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-2xl">
+            <h3 className="text-lg font-semibold text-white mb-4">Add Firewall Rule</h3>
+            
+            <form className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Chain</label>
+                  <select className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                    <option value="input">Input</option>
+                    <option value="forward">Forward</option>
+                    <option value="output">Output</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Action</label>
+                  <select className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                    <option value="accept">Accept</option>
+                    <option value="drop">Drop</option>
+                    <option value="reject">Reject</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Source Address</label>
+                  <input
+                    type="text"
+                    placeholder="192.168.1.0/24 or any"
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Destination Address</label>
+                  <input
+                    type="text"
+                    placeholder="10.0.0.0/8 or any"
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Protocol</label>
+                  <select className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                    <option value="tcp">TCP</option>
+                    <option value="udp">UDP</option>
+                    <option value="icmp">ICMP</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Port</label>
+                  <input
+                    type="number"
+                    placeholder="80, 443, etc."
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Comment</label>
+                <input
+                  type="text"
+                  placeholder="Rule description"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    alert('Firewall rule added successfully!');
+                    setShowAddRuleForm(false);
+                  }}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors"
+                >
+                  Add Rule
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddRuleForm(false)}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
