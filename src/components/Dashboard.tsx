@@ -125,6 +125,10 @@ const Dashboard: React.FC<DashboardProps> = ({ wsConnection }) => {
             </div>
           </div>
           <AlertPanel />
+          <AlertPanel onViewAll={() => {
+            window.location.hash = '#security';
+            window.dispatchEvent(new HashChangeEvent('hashchange'));
+          }} />
         </div>
       </div>
 
